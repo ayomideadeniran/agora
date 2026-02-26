@@ -28,21 +28,22 @@ pub enum EventRegistryError {
     EventCancelled = 22,
     EventAlreadyCancelled = 23,
     InvalidGracePeriodEnd = 24,
+    EventIsActive = 25,
     // ── Loyalty & Staking errors ───────────────────────────────────────
     /// Organizer already has an active stake
-    AlreadyStaked = 25,
+    AlreadyStaked = 26,
     /// Organizer does not have an active stake
-    NotStaked = 26,
+    NotStaked = 27,
     /// Stake amount is below the minimum required for Verified status
-    InsufficientStakeAmount = 27,
+    InsufficientStakeAmount = 28,
     /// Stake amount must be greater than zero
-    InvalidStakeAmount = 28,
+    InvalidStakeAmount = 29,
     /// Staking has not been configured by the admin
-    StakingNotConfigured = 29,
+    StakingNotConfigured = 30,
     /// No rewards available to claim
-    NoRewardsAvailable = 30,
+    NoRewardsAvailable = 31,
     /// Reward distribution total must be positive
-    InvalidRewardAmount = 31,
+    InvalidRewardAmount = 32,
 }
 
 impl core::fmt::Display for EventRegistryError {
@@ -105,6 +106,9 @@ impl core::fmt::Display for EventRegistryError {
             }
             EventRegistryError::InvalidGracePeriodEnd => {
                 write!(f, "Grace period end timestamp must be in the future")
+            }
+            EventRegistryError::EventIsActive => {
+                write!(f, "Cannot perform action on an active event")
             }
             EventRegistryError::AlreadyStaked => {
                 write!(f, "Organizer already has an active stake")

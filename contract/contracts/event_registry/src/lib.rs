@@ -1,15 +1,15 @@
 #![no_std]
 
 use crate::events::{
-    AgoraEvent, CollateralStakedEvent, CollateralUnstakedEvent, EventCancelledEvent,
-    EventPostponedEvent, EventRegisteredEvent, EventStatusUpdatedEvent, EventsSuspendedEvent,
-    FeeUpdatedEvent, GlobalPromoUpdatedEvent, GoalMetEvent, InitializationEvent,
-    InventoryIncrementedEvent, LoyaltyScoreUpdatedEvent, MetadataUpdatedEvent,
+    AgoraEvent, CollateralStakedEvent, CollateralUnstakedEvent, EventArchivedEvent,
+    EventCancelledEvent, EventPostponedEvent, EventRegisteredEvent, EventStatusUpdatedEvent,
+    EventsSuspendedEvent, FeeUpdatedEvent, GlobalPromoUpdatedEvent, GoalMetEvent,
+    InitializationEvent, InventoryIncrementedEvent, LoyaltyScoreUpdatedEvent, MetadataUpdatedEvent,
     OrganizerBlacklistedEvent, OrganizerRemovedFromBlacklistEvent, RegistryUpgradedEvent,
     ScannerAuthorizedEvent, StakerRewardsClaimedEvent, StakerRewardsDistributedEvent,
 };
 use crate::types::{
-    BlacklistAuditEntry, EventInfo, EventRegistrationArgs, EventStatus, GuestProfile,
+    BlacklistAuditEntry, EventInfo, EventReceipt, EventRegistrationArgs, EventStatus, GuestProfile,
     MultiSigConfig, OrganizerStake, PaymentInfo,
 };
 use soroban_sdk::{contract, contractimpl, token, Address, BytesN, Env, String, Vec};
@@ -327,6 +327,43 @@ impl EventRegistry {
                     EventCancelledEvent {
                         event_id,
                         cancelled_by: event_info.organizer_address,
+                        timestamp: env.ledger().timestamp(),
+                    },
+                );
+
+                Ok(())
+            }
+            None => Err(EventRegistryError::EventNotFound),
+        }
+    }
+
+    /// Archive an event that is settled and no longer active.
+    /// Wipes large data structures and leaves a minimal Receipt,
+    /// returning reclaimed XLM deposit to the organizer automatically.
+    pub fn archive_event(env: Env, event_id: String) -> Result<(), EventRegistryError> {
+        match storage::get_event(&env, event_id.clone()) {
+            Some(event_info) => {
+                event_info.organizer_address.require_auth();
+
+                if event_info.is_active {
+                    return Err(EventRegistryError::EventIsActive);
+                }
+
+                storage::remove_event(&env, event_id.clone());
+
+                let receipt = EventReceipt {
+                    event_id: event_id.clone(),
+                    organizer_address: event_info.organizer_address.clone(),
+                    total_sold: event_info.current_supply,
+                    archived_at: env.ledger().timestamp(),
+                };
+                storage::store_event_receipt(&env, receipt);
+
+                env.events().publish(
+                    (AgoraEvent::EventArchived,),
+                    EventArchivedEvent {
+                        event_id,
+                        organizer_address: event_info.organizer_address,
                         timestamp: env.ledger().timestamp(),
                     },
                 );
