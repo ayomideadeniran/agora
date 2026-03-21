@@ -12,6 +12,38 @@ pub enum EventRegistryError {
     EventInactive = 6,
     NotInitialized = 7,
     AlreadyInitialized = 8,
+    InvalidMetadataCid = 9,
+    MaxSupplyExceeded = 10,
+    SupplyOverflow = 11,
+    UnauthorizedCaller = 12,
+    TierLimitExceedsMaxSupply = 13,
+    TierNotFound = 14,
+    TierSupplyExceeded = 15,
+    SupplyUnderflow = 16,
+    InvalidQuantity = 17,
+    OrganizerBlacklisted = 18,
+    OrganizerNotBlacklisted = 19,
+    InvalidResaleCapBps = 20,
+    InvalidPromoBps = 21,
+    EventCancelled = 22,
+    EventAlreadyCancelled = 23,
+    InvalidGracePeriodEnd = 24,
+    EventIsActive = 25,
+    // ── Loyalty & Staking errors ───────────────────────────────────────
+    /// Organizer already has an active stake
+    AlreadyStaked = 26,
+    /// Organizer does not have an active stake
+    NotStaked = 27,
+    /// Stake amount is below the minimum required for Verified status
+    InsufficientStakeAmount = 28,
+    /// Stake amount must be greater than zero
+    InvalidStakeAmount = 29,
+    /// Staking has not been configured by the admin
+    StakingNotConfigured = 30,
+    /// No rewards available to claim
+    NoRewardsAvailable = 31,
+    /// Reward distribution total must be positive
+    InvalidRewardAmount = 32,
 }
 
 impl core::fmt::Display for EventRegistryError {
@@ -29,6 +61,79 @@ impl core::fmt::Display for EventRegistryError {
             }
             EventRegistryError::NotInitialized => write!(f, "Contract not initialized"),
             EventRegistryError::AlreadyInitialized => write!(f, "Contract already initialized"),
+            EventRegistryError::InvalidMetadataCid => write!(f, "Invalid IPFS Metadata CID format"),
+            EventRegistryError::MaxSupplyExceeded => {
+                write!(f, "Event has reached its maximum ticket supply")
+            }
+            EventRegistryError::SupplyOverflow => {
+                write!(f, "Supply counter overflow")
+            }
+            EventRegistryError::UnauthorizedCaller => {
+                write!(f, "Caller is not the authorized TicketPayment contract")
+            }
+            EventRegistryError::TierLimitExceedsMaxSupply => {
+                write!(f, "Sum of tier limits exceeds event max supply")
+            }
+            EventRegistryError::TierNotFound => {
+                write!(f, "Ticket tier not found")
+            }
+            EventRegistryError::TierSupplyExceeded => {
+                write!(f, "Tier has reached its maximum supply")
+            }
+            EventRegistryError::SupplyUnderflow => {
+                write!(f, "Supply counter underflow")
+            }
+            EventRegistryError::InvalidQuantity => {
+                write!(f, "Quantity must be greater than zero")
+            }
+            EventRegistryError::OrganizerBlacklisted => {
+                write!(f, "Organizer is blacklisted and cannot perform this action")
+            }
+            EventRegistryError::OrganizerNotBlacklisted => {
+                write!(f, "Organizer is not currently blacklisted")
+            }
+            EventRegistryError::InvalidResaleCapBps => {
+                write!(f, "Resale cap must be between 0 and 10000 basis points")
+            }
+            EventRegistryError::InvalidPromoBps => {
+                write!(f, "Promo discount must be between 0 and 10000 basis points")
+            }
+            EventRegistryError::EventCancelled => {
+                write!(f, "The event has been cancelled")
+            }
+            EventRegistryError::EventAlreadyCancelled => {
+                write!(f, "The event is already cancelled")
+            }
+            EventRegistryError::InvalidGracePeriodEnd => {
+                write!(f, "Grace period end timestamp must be in the future")
+            }
+            EventRegistryError::EventIsActive => {
+                write!(f, "Cannot perform action on an active event")
+            }
+            EventRegistryError::AlreadyStaked => {
+                write!(f, "Organizer already has an active stake")
+            }
+            EventRegistryError::NotStaked => {
+                write!(f, "Organizer does not have an active stake")
+            }
+            EventRegistryError::InsufficientStakeAmount => {
+                write!(
+                    f,
+                    "Stake amount is below the minimum required for Verified status"
+                )
+            }
+            EventRegistryError::InvalidStakeAmount => {
+                write!(f, "Stake amount must be greater than zero")
+            }
+            EventRegistryError::StakingNotConfigured => {
+                write!(f, "Staking has not been configured by the admin")
+            }
+            EventRegistryError::NoRewardsAvailable => {
+                write!(f, "No rewards available to claim")
+            }
+            EventRegistryError::InvalidRewardAmount => {
+                write!(f, "Reward distribution total must be positive")
+            }
         }
     }
 }

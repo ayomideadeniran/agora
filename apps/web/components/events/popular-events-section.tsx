@@ -6,6 +6,7 @@ import Image from "next/image";
 import { EventCard } from "./event-card";
 import { Button } from "../ui/button";
 import { dataEvents } from "./mockups";
+import { FilterSidebar, FilterState } from "./filter-sidebar";
 
 const container = {
   hidden: { opacity: 0 },
@@ -35,18 +36,70 @@ const item = {
   },
 };
 
+const DEFAULT_FILTERS: FilterState = {
+  date: "",
+  categories: [],
+  locations: [],
+  minPrice: "",
+  maxPrice: "",
+};
+
 export function PopularEventsSection() {
   const [isFocused, setIsFocused] = useState(false);
   const [search, setSearch] = useState("");
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
+  const [filters, setFilters] = useState<FilterState>(DEFAULT_FILTERS);
 
   const filteredEvents = useMemo(() => {
-    const query = search.toLowerCase().trim();
-    if (!query) return dataEvents;
+    let result = dataEvents;
 
-    return dataEvents.filter((event) =>
-      event.title.toLowerCase().includes(query),
-    );
-  }, [search]);
+    // 1. Search Query
+    const query = search.toLowerCase().trim();
+    if (query) {
+      result = result.filter((event) =>
+        event.title.toLowerCase().includes(query),
+      );
+    }
+
+    // 2. Categories
+    if (filters.categories.length > 0) {
+      result = result.filter((event) =>
+        filters.categories.includes(event.category),
+      );
+    }
+
+    // 3. Location
+    if (filters.locations.length > 0) {
+      result = result.filter((event) =>
+        filters.locations.some((loc) =>
+          event.location.toLowerCase().includes(loc.toLowerCase()),
+        ),
+      );
+    }
+
+    // 4. Date
+    if (filters.date && filters.date !== "Any time") {
+      // Note: Since mockup dates are static strings like "Thu, 22 Jan, 1:00",
+      // strict parsing for "Today", "Tomorrow" is omitted for now.
+      // In a real app with timestamps, you would check the date ranges here.
+    }
+
+    // 5. Price Range
+    if (filters.minPrice !== "" || filters.maxPrice !== "") {
+      result = result.filter((event) => {
+        const isFree = event.price.toLowerCase() === "free";
+        const price = isFree ? 0 : parseFloat(event.price);
+
+        const min = filters.minPrice !== "" ? parseFloat(filters.minPrice) : 0;
+        const max =
+          filters.maxPrice !== "" ? parseFloat(filters.maxPrice) : Infinity;
+
+        return price >= min && price <= max;
+      });
+    }
+
+    return result;
+  }, [search, filters]);
 
   const widthVariants = {
     focused: { width: "12rem" },
@@ -124,6 +177,9 @@ export function PopularEventsSection() {
                 shadowColor="transparent"
                 textColor="text-white"
                 className="border-none sm:rounded-4xl! max-sm:p-0 h-9.75 sm:w-34 w-9.75"
+                onClick={() => setIsFilterOpen(true)}
+                aria-haspopup="dialog"
+                aria-expanded={isFilterOpen}
               >
                 <Image
                   src="/icons/filter.svg"
@@ -152,6 +208,7 @@ export function PopularEventsSection() {
               className="flex"
             >
               <EventCard
+                id={event.id}
                 title={event.title}
                 date={event.date}
                 location={event.location}
@@ -162,12 +219,24 @@ export function PopularEventsSection() {
           ))}
 
           {filteredEvents.length === 0 && (
-            <motion.p
-              variants={item}
-              className="col-span-full text-center text-black "
-            >
-              No events found
-            </motion.p>
+            <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
+              <div className="w-16 h-16 mb-4 rounded-full bg-black/5 flex items-center justify-center">
+                <Image
+                  src="/icons/search.svg"
+                  width={32}
+                  height={32}
+                  alt="search icon"
+                  className="opacity-40"
+                />
+              </div>
+              <h4 className="text-[20px] font-semibold text-black mb-2">
+                No matching events
+              </h4>
+              <p className="text-[15px] text-black/60 max-w-sm">
+                We couldn&apos;t find any events that match your current filter
+                selections. Try adjusting your search or clearing some filters.
+              </p>
+            </div>
           )}
         </motion.div>
 
@@ -195,6 +264,14 @@ export function PopularEventsSection() {
           </Button>
         </motion.div>
       </div>
+
+      {/* ── Filter Sidebar ── */}
+      <FilterSidebar
+        isOpen={isFilterOpen}
+        onClose={() => setIsFilterOpen(false)}
+        filters={filters}
+        onFiltersChange={setFilters}
+      />
     </section>
   );
 }
