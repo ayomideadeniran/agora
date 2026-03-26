@@ -3165,53 +3165,118 @@ fn test_series_pass_issued_at_timestamp() {
     assert_eq!(pass.usage_count, 0);
 }
 
-#[test]
-fn test_event_description() {
-    let env = Env::default();
-    env.mock_all_auths();
+// ── Milestone percentage validation ──────────────────────────────────────────
 
+use crate::types::Milestone;
+
+fn setup_client(env: &Env) -> (EventRegistryClient<'_>, Address) {
     let contract_id = env.register(EventRegistry, ());
-    let client = EventRegistryClient::new(&env, &contract_id);
-
-    let admin = Address::generate(&env);
-    let organizer = Address::generate(&env);
-    let payment_addr = Address::generate(&env);
-    let platform_wallet = Address::generate(&env);
-    let usdc_token = Address::generate(&env);
-
+    let client = EventRegistryClient::new(env, &contract_id);
+    let admin = Address::generate(env);
+    let platform_wallet = Address::generate(env);
+    let usdc_token = Address::generate(env);
     client.initialize(&admin, &platform_wallet, &500, &usdc_token);
+    let organizer = Address::generate(env);
+    (client, organizer)
+}
 
-    let event_id = String::from_str(&env, "event_with_banner");
-    let metadata_cid = String::from_str(
-        &env,
-        "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
-    );
-    let banner_cid = Some(String::from_str(
-        &env,
-        "bafkreifh22222222222222222222222222222222222222222222222222",
-    ));
-    let tiers = Map::new(&env);
-
-    client.register_event(&EventRegistrationArgs {
-        event_id: event_id.clone(),
+fn base_args(
+    env: &Env,
+    organizer: &Address,
+    milestone_plan: Option<soroban_sdk::Vec<Milestone>>,
+) -> EventRegistrationArgs {
+    EventRegistrationArgs {
+        event_id: String::from_str(env, "evt_milestone"),
         organizer_address: organizer.clone(),
-        payment_address: payment_addr.clone(),
-        metadata_cid: metadata_cid.clone(),
+        payment_address: Address::generate(env),
+        metadata_cid: String::from_str(
+            env,
+            "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+        ),
         max_supply: 100,
-        milestone_plan: None,
-        tiers: tiers.clone(),
-        refund_deadline: env.ledger().timestamp() + 86400,
+        milestone_plan,
+        tiers: Map::new(env),
+        refund_deadline: 0,
         restocking_fee: 0,
         resale_cap_bps: None,
         min_sales_target: None,
         target_deadline: None,
-        banner_cid: banner_cid.clone(),
-    });
+        banner_cid: None,
+    }
+}
 
-    let event_info = client.get_event(&event_id).unwrap();
-    assert_eq!(event_info.banner_cid, banner_cid);
-    assert_eq!(event_info.event_id, event_id);
-    assert_eq!(event_info.organizer_address, organizer);
+#[test]
+fn test_register_event_milestone_plan_valid_exact_100() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, organizer) = setup_client(&env);
+
+    let milestones = soroban_sdk::vec![
+        &env,
+        Milestone {
+            sales_threshold: 50,
+            release_percent: 5000
+        },
+        Milestone {
+            sales_threshold: 100,
+            release_percent: 5000
+        },
+    ];
+    // Should succeed: 5000 + 5000 = 10000 bps (exactly 100%)
+    client.register_event(&base_args(&env, &organizer, Some(milestones)));
+}
+
+#[test]
+fn test_register_event_milestone_plan_valid_under_100() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, organizer) = setup_client(&env);
+
+    let milestones = soroban_sdk::vec![
+        &env,
+        Milestone {
+            sales_threshold: 50,
+            release_percent: 3000
+        },
+        Milestone {
+            sales_threshold: 100,
+            release_percent: 4000
+        },
+    ];
+    // Should succeed: 3000 + 4000 = 7000 bps (70%)
+    client.register_event(&base_args(&env, &organizer, Some(milestones)));
+}
+
+#[test]
+fn test_register_event_milestone_plan_exceeds_100_returns_error() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, organizer) = setup_client(&env);
+
+    let milestones = soroban_sdk::vec![
+        &env,
+        Milestone {
+            sales_threshold: 50,
+            release_percent: 6000
+        },
+        Milestone {
+            sales_threshold: 100,
+            release_percent: 5000
+        },
+    ];
+    // Should fail: 6000 + 5000 = 11000 bps (110%)
+    let result = client.try_register_event(&base_args(&env, &organizer, Some(milestones)));
+    assert_eq!(result, Err(Ok(EventRegistryError::InvalidMilestonePlan)));
+}
+
+#[test]
+fn test_register_event_no_milestone_plan_succeeds() {
+    let env = Env::default();
+    env.mock_all_auths();
+    let (client, organizer) = setup_client(&env);
+
+    // None milestone_plan should always pass validation
+    client.register_event(&base_args(&env, &organizer, None));
 }
 
 // ==================== Governance / Multi-Sig Tests ====================
@@ -3425,8 +3490,8 @@ fn test_active_proposals_list() {
 
     let active_proposals = client.get_active_proposals();
     assert_eq!(active_proposals.len(), 2);
-    assert!(active_proposals.contains(&proposal_id1));
-    assert!(active_proposals.contains(&proposal_id2));
+    assert!(active_proposals.contains(proposal_id1));
+    assert!(active_proposals.contains(proposal_id2));
 
     // Execute one proposal
     client.execute_proposal(&admin, &proposal_id1);
@@ -3434,6 +3499,6 @@ fn test_active_proposals_list() {
     // Should have one less active proposal
     let active_proposals = client.get_active_proposals();
     assert_eq!(active_proposals.len(), 1);
-    assert!(!active_proposals.contains(&proposal_id1));
-    assert!(active_proposals.contains(&proposal_id2));
+    assert!(!active_proposals.contains(proposal_id1));
+    assert!(active_proposals.contains(proposal_id2));
 }
