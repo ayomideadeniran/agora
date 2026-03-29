@@ -1,6 +1,6 @@
 use super::contract::{event_registry, TicketPaymentContract, TicketPaymentContractClient};
 use super::storage::*;
-use super::types::{PaymentStatus, TRANSFER_FEE_BPS, MAX_BPS};
+use super::types::{PaymentStatus, MAX_BPS, TRANSFER_FEE_BPS};
 use crate::error::TicketPaymentError;
 use soroban_sdk::{
     testutils::Address as _, testutils::Ledger, token, Address, Env, String, Symbol,

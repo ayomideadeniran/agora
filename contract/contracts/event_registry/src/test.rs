@@ -421,7 +421,8 @@ fn test_get_active_events_count_tracks_status_changes() {
 
     for event_id in [event_1.clone(), event_2.clone(), event_3.clone()] {
         client.register_event(&EventRegistrationArgs {
-            event_id,
+            event_id: event_id.clone(),
+            name: String::from_str(&env, "Test Event"),
             organizer_address: organizer.clone(),
             payment_address: test_payment_address(&env),
             metadata_cid: metadata_cid.clone(),
@@ -554,6 +555,7 @@ fn test_get_organizer_receipts_returns_archived_receipts() {
     let make_event =
         |event_id: &str, organizer_address: &Address, current_supply: i128| EventInfo {
             event_id: String::from_str(&env, event_id),
+            name: String::from_str(&env, "Test Event"),
             organizer_address: organizer_address.clone(),
             payment_address: test_payment_address(&env),
             platform_fee_percent: 500,
@@ -4606,6 +4608,7 @@ fn test_register_event_restocking_fee_overflow_returns_invalid_fee_calculation()
 
     let result = client.try_register_event(&EventRegistrationArgs {
         event_id: String::from_str(&env, "evt_restocking_overflow"),
+        name: String::from_str(&env, "Test Event"),
         organizer_address: organizer.clone(),
         payment_address: test_payment_address(&env),
         metadata_cid: String::from_str(
@@ -4850,7 +4853,6 @@ fn test_register_event_tags_and_banner_cid_coexist() {
     assert_eq!(info.tags.unwrap().len(), 2);
 }
 
-
 // ─── set_admin tests ──────────────────────────────────────────────────────────
 
 #[test]
@@ -4874,7 +4876,12 @@ fn test_set_admin_emits_event() {
     // Use set_platform_fee as a reference (known to emit 1 event)
     client.set_platform_fee(&100);
     let fee_events = env.events().all();
-    assert_eq!(fee_events.len(), 1, "set_platform_fee should emit 1 event, found {}", fee_events.len());
+    assert_eq!(
+        fee_events.len(),
+        1,
+        "set_platform_fee should emit 1 event, found {}",
+        fee_events.len()
+    );
 
     // Now test set_admin — should emit exactly one AdminUpdated event
     client.set_admin(&new_admin);
@@ -4932,5 +4939,8 @@ fn test_set_admin_invalid_address_rejected() {
 
     // Try to set the contract's own address as admin — must fail with InvalidAddress
     let result = client.try_set_admin(&client.address);
-    assert_eq!(result, Err(Ok(crate::error::EventRegistryError::InvalidAddress)));
+    assert_eq!(
+        result,
+        Err(Ok(crate::error::EventRegistryError::InvalidAddress))
+    );
 }

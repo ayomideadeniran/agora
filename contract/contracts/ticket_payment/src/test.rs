@@ -1554,9 +1554,9 @@ fn test_transfer_ticket_with_fee() {
     let new_owner = Address::generate(&env);
     let payment_id = String::from_str(&env, "pay_1");
     let event_id = String::from_str(&env, "event_1");
-    
+
     // Use the central constant for testing
-    let transfer_fee_bps = TRANSFER_FEE_BPS; 
+    let transfer_fee_bps = TRANSFER_FEE_BPS;
     let ticket_amount = 1000i128;
     let expected_absolute_fee = (ticket_amount * transfer_fee_bps as i128) / MAX_BPS as i128;
 
@@ -1567,7 +1567,12 @@ fn test_transfer_ticket_with_fee() {
 
     // Mint USDC to buyer for fee
     usdc_token.mint(&buyer, &expected_absolute_fee);
-    token::Client::new(&env, &usdc_id).approve(&buyer, &client.address, &expected_absolute_fee, &9999);
+    token::Client::new(&env, &usdc_id).approve(
+        &buyer,
+        &client.address,
+        &expected_absolute_fee,
+        &9999,
+    );
 
     // Initial escrow balance
     let initial_escrow = client.get_event_escrow_balance(&event_id);
@@ -2385,7 +2390,7 @@ fn test_discount_code_one_time_use() {
         &Some(Bytes::from_slice(&env, b"ONCE_ONLY")),
         &None,
     );
-    assert_eq!(res, Err(Ok(TicketPaymentError::DiscountCodeAlreadyUsed)));
+    assert_eq!(res, Err(Ok(TicketPaymentError::DiscountCodeUsed)));
 }
 
 #[test]
@@ -6631,7 +6636,7 @@ fn insert_confirmed_payment(
     payment_id: &String,
     buyer: &Address,
     event_id: &str,
-    ) -> Payment {
+) -> Payment {
     let payment = Payment {
         payment_id: payment_id.clone(),
         event_id: String::from_str(env, event_id),
@@ -6647,7 +6652,7 @@ fn insert_confirmed_payment(
         refunded_amount: 0,
     };
     env.as_contract(client_address, || {
-        store_payment(env, payment);
+        store_payment(env, payment.clone());
     });
     payment
 }

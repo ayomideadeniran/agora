@@ -19,8 +19,8 @@ use crate::storage::{
     subtract_from_total_fees_collected_by_token, update_event_balance,
 };
 use crate::types::{
-    DataKey, HighestBid, ParameterChange, ParameterProposal, Payment, PaymentStatus, ProposalStatus,
-    MAX_BPS, TRANSFER_FEE_BPS,
+    DataKey, HighestBid, ParameterChange, ParameterProposal, Payment, PaymentStatus,
+    ProposalStatus, MAX_BPS, TRANSFER_FEE_BPS,
 };
 use crate::{
     error::TicketPaymentError,
@@ -579,7 +579,7 @@ impl TicketPaymentContract {
                 return Err(TicketPaymentError::InvalidDiscountCode);
             }
             if is_discount_hash_used(&env, &hash) {
-                return Err(TicketPaymentError::DiscountCodeAlreadyUsed);
+                return Err(TicketPaymentError::DiscountCodeUsed);
             }
             // 10% discount
             let discounted = after_promo
@@ -1716,14 +1716,15 @@ impl TicketPaymentContract {
             }
         }
 
-        let transfer_fee_bps = get_transfer_fee(&env, payment.event_id.clone())
-            .unwrap_or(TRANSFER_FEE_BPS);
+        let transfer_fee_bps =
+            get_transfer_fee(&env, payment.event_id.clone()).unwrap_or(TRANSFER_FEE_BPS);
 
         let mut actual_transfer_fee: i128 = 0;
 
         if transfer_fee_bps > 0 {
             // Calculate the actual transfer fee based on the original ticket amount
-            actual_transfer_fee = payment.amount
+            actual_transfer_fee = payment
+                .amount
                 .checked_mul(transfer_fee_bps as i128)
                 .and_then(|v| v.checked_div(MAX_BPS as i128))
                 .ok_or(TicketPaymentError::ArithmeticError)?;
@@ -1734,7 +1735,12 @@ impl TicketPaymentContract {
                 let contract_address = env.current_contract_address();
 
                 // Transfer fee from old owner to contract
-                token_client.transfer_from(&contract_address, &from, &contract_address, &actual_transfer_fee);
+                token_client.transfer_from(
+                    &contract_address,
+                    &from,
+                    &contract_address,
+                    &actual_transfer_fee,
+                );
 
                 // Update escrow balances (fee goes to organizer)
                 update_event_balance(&env, payment.event_id.clone(), actual_transfer_fee, 0);

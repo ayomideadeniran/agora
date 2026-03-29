@@ -19,7 +19,10 @@ async fn main() {
     tracing::info!("Configuration: PORT={}", config.port);
     tracing::info!("Configuration: RUST_ENV={}", config.rust_env);
     tracing::info!("Configuration: RUST_LOG={}", config.rust_log);
-    tracing::info!("Configuration: CORS_ALLOWED_ORIGINS={}", config.cors_allowed_origins);
+    tracing::info!(
+        "Configuration: CORS_ALLOWED_ORIGINS={}",
+        config.cors_allowed_origins
+    );
     // Note: DATABASE_URL is strictly excluded from logging for security reasons.
 
     let pool = PgPoolOptions::new()
