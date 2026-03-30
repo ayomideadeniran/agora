@@ -14,7 +14,7 @@ import { MobileNavLink } from "./navbar/mobile-nav-link";
 export function Navbar() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
-  const [isLoggedIn] = useState(false);
+  const [isLoggedIn] = useState(true);
 
   // Lock body scroll when menu is open
   useEffect(() => {
@@ -140,10 +140,10 @@ export function Navbar() {
                   <>
                     <MobileNavLink
                       i={0}
-                      href="/"
+                      href="/home"
                       icon="/icons/home.svg"
-                      text="Home"
-                      isActive={pathname === "/"}
+                      text="Home1"
+                      isActive={pathname === "/home"}
                       onClose={() => setIsOpen(false)}
                     />
                     <MobileNavLink
