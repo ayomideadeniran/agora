@@ -747,6 +747,52 @@ fn test_register_event_invalid_target_deadline() {
 
     let admin = Address::generate(&env);
     let organizer = Address::generate(&env);
+    let payment_addr = Address::generate(&env);
+    let platform_wallet = Address::generate(&env);
+
+    env.mock_all_auths();
+    let usdc_token = Address::generate(&env);
+    client.initialize(&admin, &platform_wallet, &500, &usdc_token);
+
+    let event_id = String::from_str(&env, "event_trim_test");
+    let metadata_cid = String::from_str(
+        &env,
+        "bafybeigdyrzt5sfp7udm7hu76uh7y26nf3efuylqabf3oclgtqy55fbzdi",
+    );
+
+    // Register with intentionally messy name (leading/trailing whitespace)
+    let messy_name = String::from_str(&env, "  Summer Fest 2025  ");
+    client.register_event(&EventRegistrationArgs {
+        event_id: event_id.clone(),
+        name: messy_name,
+        organizer_address: organizer,
+        payment_address: payment_addr,
+        metadata_cid,
+        max_supply: 100,
+        milestone_plan: None,
+        tiers: Map::new(&env),
+        refund_deadline: 0,
+        restocking_fee: 0,
+        resale_cap_bps: None,
+        min_sales_target: None,
+        target_deadline: None,
+        banner_cid: None,
+        tags: None,
+    });
+
+    let stored = client.get_event(&event_id).unwrap();
+    // Name should be trimmed of leading and trailing whitespace
+    assert_eq!(stored.name, String::from_str(&env, "Summer Fest 2025"));
+}
+
+#[test]
+fn test_register_event_invalid_target_deadline() {
+    let env = Env::default();
+    let contract_id = env.register(EventRegistry, ());
+    let client = EventRegistryClient::new(&env, &contract_id);
+
+    let admin = Address::generate(&env);
+    let organizer = Address::generate(&env);
     let payment_addr = test_payment_address(&env);
     let platform_wallet = Address::generate(&env);
 
