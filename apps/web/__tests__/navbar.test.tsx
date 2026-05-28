@@ -1,22 +1,20 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { expect, afterEach, describe, it, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { Navbar } from "@/components/layout/navbar";
-import { useState } from "react";
-import Image from "next/image";
 
 // Mock next/image
 vi.mock("next/image", () => ({
   default: ({ src, alt, width, height }: { src: string; alt: string; width: number; height: number }) => (
-    <Image src={src} alt={alt} width={width} height={height} />
+    <img src={src} alt={alt} width={width} height={height} />
   ),
 }));
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
   usePathname: vi.fn(() => "/home"),
-  useRouter: vi.fn(),
 }));
 
 // Mock framer-motion
@@ -35,7 +33,7 @@ describe("Navbar", () => {
 
   it("renders correctly with logged-in user", () => {
     // Mock isLoggedIn to be true
-    vi.mocked(useState).mockReturnValue([true, vi.fn()]);
+    vi.mocked(require("react").useState).mockReturnValue([true, vi.fn()] as any);
     
     render(<Navbar />);
     
@@ -46,7 +44,7 @@ describe("Navbar", () => {
 
   it("renders correctly with guest user", () => {
     // Mock isLoggedIn to be false
-    vi.mocked(useState).mockReturnValue([false, vi.fn()]);
+    vi.mocked(require("react").useState).mockReturnValue([false, vi.fn()] as any);
     
     render(<Navbar />);
     
@@ -57,7 +55,7 @@ describe("Navbar", () => {
 
   it("toggles mobile menu when button is clicked", () => {
     // Mock isLoggedIn to be true
-    vi.mocked(useState).mockReturnValue([true, vi.fn()]);
+    vi.mocked(require("react").useState).mockReturnValue([true, vi.fn()] as any);
     
     render(<Navbar />);
     

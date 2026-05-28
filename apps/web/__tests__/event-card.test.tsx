@@ -1,21 +1,20 @@
 import { render, screen, fireEvent } from "@testing-library/react";
 import { expect, afterEach, describe, it, vi } from "vitest";
 import { cleanup } from "@testing-library/react";
+import { waitFor } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import { EventCard } from "@/components/events/event-card";
-import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 // Mock next/image
 vi.mock("next/image", () => ({
   default: ({ src, alt, width, height }: { src: string; alt: string; width: number; height: number }) => (
-    <Image src={src} alt={alt} width={width} height={height} />
+    <img src={src} alt={alt} width={width} height={height} />
   ),
 }));
 
 // Mock next/navigation
 vi.mock("next/navigation", () => ({
-  useRouter: vi.fn(() => ({ push: vi.fn() })),
+  useRouter: vi.fn(),
 }));
 
 const mockEvent = {
@@ -58,7 +57,7 @@ describe("EventCard", () => {
 
   it("handles click and navigates to event page", () => {
     const mockPush = vi.fn();
-    vi.mocked(useRouter).mockReturnValue({ push: mockPush });
+    vi.mocked(require("next/navigation").useRouter).mockReturnValue({ push: mockPush } as any);
     
     render(<EventCard {...mockEvent} />);
     
