@@ -139,15 +139,6 @@ export function Navbar() {
                   alt="Close menu"
                   className="object-contain"
                 />
-=======
-                <Image
-                  src="/icons/x.svg"
-                  width={24}
-                  height={24}
-                  alt="Close menu"
-                  className="object-contain"
-                />
->>>>>>> origin/main
               </button>
 
               <div className="flex flex-col gap-6">
